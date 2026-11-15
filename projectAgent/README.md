@@ -249,3 +249,8 @@ sequenceDiagram
   - System3 的落地形态就是 **modelHub**：一个对外提供 LLM 服务的模型中心。
   - 我们将其命名为：codeGenReasoningDeepest, codeGenReasoningLatest, codeGenLatest
   - System1 可以直接调用 System3，不必经过 System2；System2 自身也重度依赖 System3。System2 与 System3 都由所有 projectAgent 共用。
+
+## 落地（Realization）
+
+- **[projectAgentFramework](../projectAgentFramework/README.md)**：打造与迁移框架——支撑 `newProjectAgent`（正向新建）与 `portProjectAgent`（存量演进），沉淀统一的 `Sys1` 骨架、协议契约与底座连接器。
+- **[projectAgentRunner](../projectAgentRunner/README.md)**：`agentRunner`（`Sys2@R`）的具体实现——作为全池共享的运行引擎，承载每个 `projectAgent` 的 `1 service + 1..N autoExecutor` 实例并硬化 `O+G+V` 治理。
