@@ -195,3 +195,57 @@ sequenceDiagram
     Note over USER,AGENT: Stage-Final 终结（四条入口：1-Final(deliver) 交付完成、1-Final(abort) 审查判弃、0-Final 无法共识、1R-Final 重议判弃）
     end
 ```
+
+
+### defineSystem（系统定义）
+
+下面这张图回答三个问题：谁拥有谁，谁共用谁，谁依赖谁。每个 projectAgent 把 System1 装在自己身体里；System2 与 System3 放在外面，由所有 projectAgent 共用。依赖有三条：System1 走 System2（business-oriented 支撑业务，infrastructure-oriented 提供运行与治理基座）；System1 也可直接调用 System3；System2 自身也重度依赖 System3。
+
+```text
+┌──────────────────────────────────────────┐        ┌──────────────────────────────────────────┐
+│ projectAgent #1                          │        │ projectAgent #N                          │
+│                                          │        │                                          │
+│  ┌────────────────────────────────────┐  │        │  ┌────────────────────────────────────┐  │
+│  │ System1 (own)                      │  │        │  │ System1 (own)                      │  │
+│  │                                    │  │        │  │                                    │  │
+│  │ R+D+C  SPEC   youWantR             │  │        │  │ R+D+C  SPEC   youWantR             │  │
+│  │               iWhyD + aiHowC       │  │        │  │               iWhyD + aiHowC       │  │
+│  │ T+O+M  Harness  Tools              │  │        │  │ T+O+M  Harness  Tools              │  │
+│  │               Orchestration        │  │        │  │               Orchestration        │  │
+│  │               Memory               │  │        │  │               Memory               │  │
+│  └────────────────────────────────────┘  │        │  └────────────────────────────────────┘  │
+└─────────────────────┬────────────────────┘        └─────────────────────┬────────────────────┘
+                      │                                                   │
+                      │                                                   │
+                      └─────────────────────────┬─────────────────────────┘
+                                                │ System1 uses:
+                          ┌─────────────────────┴─────────────────────────────┐
+                          │ System2 business + infra                          │ modelHub direct
+                          │                                                   │
+                          ▼                                                   ▼
+┌──────────────────────────────────────────────────┐        ┌──────────────────────────────────┐
+│ System2  (shared by all projectAgents)           │        │ System3  = modelHub              │
+│                       │                          │        │                                  │
+│ business-oriented     │ infrastructure           │        │ modelHub: LLM service            │
+│   KM/Skill  GraphRAG  │ R  agentRunner           │        │                                  │
+│   MCP       legacy    │ O  Observation           │ ─────▶ │ [D] codeGenReasoningDeepest      │
+│   CAT       CI/CD     │ G  Governance            │        │ [P] codeGenReasoningLatest       │
+│             unit/sys  │ V  Verification          │        │ [A] codeGenLatest                │
+│ R  agentRunner = 1    │ projectAgent             │        │ serves Sys1 and Sys2             │
+└──────────────────────────────────────────────────┘        └──────────────────────────────────┘
+```
+
+- **Sys1**@【R+D+C】：需求+设计+代码（Requirements+Design+Code）
+  - 传统上：R 以口头、邮件或表格形式存在，没有分析记录；D 至少、至多是分层或模块化，缺乏 DFX 或质量属性的考量；C 是唯一的、也只是“可能可用”的产物。
+  - 如今：SPEC=youWantR（你要什么）+iWhyD（我为什么这样设计）+aiHowC（AI 如何实现）
+- **Sys1**@【T+O+M(Harness)】：工具调用/斜杠命令/技能（ToolCalls/slashCommands/Skills）+编排/工作流（Orchestration/WorkFlow）+短期/长期记忆与有效上下文窗口（short/LongMemory/effectiveContextWindow）
+- **Sys2**@【KM/Skill+MCP+CAT(Harness)】（business-oriented，支撑 System1 的业务）：知识管理（KnowledgeManagement）+MCP-遗留服务（MCP-LegacyService）+持续自动测试（ContinueAutomaticTesting）
+  - KM 本质上基于语义搜索；GraphRAG 用于精准生成；Skill 用于共享可运行的战术技巧
+  - CAT 是 CI/CD 的执行体，在真实/仿真硬件上跑单元测试/系统测试/用户测试（unitTesting/sysTesting/userTesting）。
+- **Sys2**@【R+O+G+V】（infrastructure-oriented，提供运行与治理基座）：agentRunner+观测（Observation）+治理（Governance）+验证（Verification）
+  - R 是 agentRunner，即智能体的运行引擎。它运行两类实例：每个 projectAgent **一个服务实例**，承载该 `AGENT` 的 `Sys1@T+O+M` 与共享的 Sys1 工作区；以及该 projectAgent 名下的**多个 autoExecutor 子智能体实例**，每个实例服务一个 UserStory。同一服务实例下的多个 autoExecutor 实例并行推进，不直接改同一份 Sys1 工作区，冲突由 G 的策略拦截。
+  - G 在这里指规则的强制执行（策略与审计），不是组织管理；O 与 V 提供遥测与验证证据。
+- **Sys3**@【LLM-D/P/A】：具备深度思考（DeepThinking）、规划（Planning）或行动（Acting）能力的 LLM 推理——分别用于复杂问题分析、复杂任务规划、清晰任务执行。
+  - System3 的落地形态就是 **modelHub**：一个对外提供 LLM 服务的模型中心。
+  - 我们将其命名为：codeGenReasoningDeepest, codeGenReasoningLatest, codeGenLatest
+  - System1 可以直接调用 System3，不必经过 System2；System2 自身也重度依赖 System3。System2 与 System3 都由所有 projectAgent 共用。
